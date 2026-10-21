@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คุณคือสัตว์อะไรตอนตีสอง? 🐱</title>
+<link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+
+body{
+margin:0;
+font-family:'Mali',sans-serif;
+background:linear-gradient(160deg,#fff3b0,#ffd1dc 55%,#cfe8ff);
+min-height:100vh;
+min-height:100dvh;
+display:flex;
+justify-content:center;
+align-items:center;
+padding:16px;
+color:#4a3b52;
+}
+
+#app{
+width:min(420px,100%);
+background:#fff;
+border-radius:28px;
+box-shadow:0 12px 35px rgba(0,0,0,.15);
+padding:24px 20px;
+text-align:center;
+overflow:hidden;
+}
+
+.screen{display:none;}
+.screen.active{display:block;animation:pop .35s ease;}
+
+@keyframes pop{
+from{opacity:0;transform:translateY(12px) scale(.98);}
+to{opacity:1;transform:none;}
+}
+
+.big{font-size:72px;line-height:1.1;margin:6px 0;}
+h1{font-size:24px;margin:8px 0;line-height:1.4;}
+h2{font-size:20px;margin:10px 0;line-height:1.5;}
+p{line-height:1.7;margin:8px 0;}
+.small{font-size:13px;color:#9a8aa3;}
+
+button{
+font-family:inherit;
+font-size:16px;
+border:none;
+cursor:pointer;
+border-radius:18px;
+transition:transform .15s, background .2s;
+}
+button:active{transform:scale(.97);}
+button:focus-visible{outline:3px solid #9d6bff;outline-offset:3px;}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important;}
+}
+
+.main{
+background:#ff8fb8;
+color:#fff;
+padding:14px 28px;
+font-weight:700;
+margin-top:12px;
+}
+.soft{
+background:#ffe3ef;
+color:#d6457f;
+padding:12px 20px;
+margin:6px;
+}
+
+/* quiz */
+.bar{
+height:10px;
+background:#ffe3ef;
+border-radius:10px;
+overflow:hidden;
+margin-bottom:6px;
+}
+#barFill{
+height:100%;
+width:0;
+background:linear-gradient(90deg,#ff8fb8,#ffc371);
+transition:width .3s;
+}
+#qNum{font-size:13px;color:#9a8aa3;margin:0 0 8px;}
+
+.opt{
+display:block;
+width:100%;
+text-align:left;
+background:#fff5f9;
+color:#4a3b52;
+padding:13px 16px;
+margin:9px 0;
+line-height:1.5;
+border:2px solid transparent;
+}
+.opt:hover{background:#ffe3ef;}
+.opt.picked{background:#ffd1e3;border-color:#ff8fb8;}
+
+/* result */
+#resName{color:#d6457f;}
+.quote{
+background:#fff5f9;
+border-radius:16px;
+padding:10px 14px;
+font-style:italic;
+}
+.row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px;text-align:left;}
+.row .lbl{width:34%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.row .track{flex:1;height:10px;background:#f3e8ee;border-radius:10px;overflow:hidden;}
+.row .fill{height:100%;background:#ffa7c7;border-radius:10px;}
+.row .pct{width:36px;text-align:right;}
+</style>
+</head>
+
+<body>
+<div id="app">
+
+<!-- start -->
+<section id="start" class="screen active">
+  <div class="big">🌙🐱</div>
+  <h1>คุณคือสัตว์อะไร<br>ตอนตีสอง?</h1>
+  <p>แบบทดสอบสุดเชื่อถือไม่ได้<br>ตอบ 6 ข้อ แล้วรู้ความจริงเกี่ยวกับตัวเอง</p>
+  <button class="main" onclick="startQuiz()">เริ่มเลย ✨</button>
+  <p class="small">ผลนี้แม่นยำ 0% ห้ามเอาไปสมัครงาน</p>
+</section>
+
+<!-- quiz -->
+<section id="quiz" class="screen">
+  <div class="bar"><div id="barFill"></div></div>
+  <p id="qNum"></p>
+  <h2 id="qText"></h2>
+  <div id="options"></div>
+</section>
+
+<!-- result -->
+<section id="result" class="screen">
+  <p class="small">ผลการวิเคราะห์ของคุณคือ...</p>
+  <div class="big" id="resEmoji"></div>
+  <h1 id="resName"></h1>
+  <p id="resDesc"></p>
+  <p class="quote" id="resQuote"></p>
+  <div id="bars"></div>
+  <button class="main" onclick="shareResult()" id="shareBtn">📤 ส่งให้เพื่อนลองบ้าง</button><br>
+  <button class="soft" onclick="startQuiz()">🔁 ทำใหม่</button>
+</section>
+
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+const TYPES = {
+  cat:{
+    emoji:"🐱", name:"แมวส้มนอนขวางทางเดิน",
+    desc:"คุณเชื่อว่าการพักผ่อนคือภารกิจหลักของชีวิต ใคร ๆ ก็ต้องเดินอ้อมคุณ และคุณไม่รู้สึกผิดเลยสักนิด",
+    quote:"\"เดี๋ยวค่อยทำ... พรุ่งนี้... อาทิตย์หน้า...\""
+  },
+  dog:{
+    emoji:"🐶", name:"หมาหน้าเซเว่น",
+    desc:"แค่มีของกินก็มีความสุขที่สุดในโลก ใครแบ่งขนมให้คุณ คือเพื่อนแท้ตลอดกาล",
+    quote:"\"ใครมีอะไรกินบ้างอะ... เอ๊ะ ไม่ได้หิวนะ แค่ถามเฉย ๆ\""
+  },
+  gecko:{
+    emoji:"🦎", name:"ตุ๊กแกร้องตอนตีสอง",
+    desc:"กลางคืนคือเวลาของคุณ ไม่มีใครเข้าใจว่าคุณคิดอะไรอยู่ แต่ทุกคนได้ยินคุณแน่นอน",
+    quote:"\"อ่านแล้ว แต่ยังไม่ตอบ... ขอเวลาอีก 3 วัน\""
+  },
+  rooster:{
+    emoji:"🐔", name:"ไก่ตื่นตีสาม",
+    desc:"คุณตื่นเช้าเกินเหตุ จริงจังเกินเพื่อน และปลุกคนทั้งบ้านโดยไม่ตั้งใจ แต่ที่จริงแล้วคุณแค่อยากให้วันนี้เริ่มต้นดี ๆ",
+    quote:"\"ตื่นแล้วว้อย! ... เอ๊ะ ตื่นทำไมนะ\""
+  },
+  duck:{
+    emoji:"🦆", name:"เป็ดว่ายน้ำ",
+    desc:"ภายนอกนิ่งสงบเหมือนไม่มีอะไร แต่ใต้น้ำขาถีบไม่หยุดตลอด 24 ชั่วโมง คุณทำเนียนเก่งที่สุดในกลุ่ม",
+    quote:"\"ไม่เป็นไร สบายมาก\" (ในใจ: ช่วยด้วย)"
+  }
+};
+
+const QUESTIONS = [
+  { q:"ตื่นนอนตอนเช้า คุณทำอะไรเป็นอย่างแรก?", a:[
+    ["ปิดนาฬิกาปลุก แล้วนอนต่ออีก 5 รอบ","cat"],
+    ["เปิดมือถือเช็คแจ้งเตือนทันที","gecko"],
+    ["ตื่นก่อนนาฬิกาปลุก 2 ชั่วโมงแบบไม่รู้ทำไม","rooster"],
+    ["หิวข้าว คิดถึงแต่ของกิน","dog"],
+    ["ทำเนียน ๆ ว่าตื่นแล้ว ทั้งที่ยังไม่ตื่น","duck"]
+  ]},
+  { q:"เพื่อนชวนไปเที่ยวกะทันหัน คุณตอบว่า?", a:[
+    ["\"ไปก็ได้\" แล้วก็ไม่ไปจริง","cat"],
+    ["ไปดิ ถ้ามีของกิน!","dog"],
+    ["ตอบช้าไป 3 ชั่วโมง แล้วถามว่ายังไปกันอยู่มั้ย","gecko"],
+    ["พร้อมตั้งแต่เมื่อวานแล้ว","rooster"],
+    ["ไปด้วยหน้าตาปกติ แต่ในใจวางแผนหนีกลับบ้าน","duck"]
+  ]},
+  { q:"ตอนตีสอง คุณกำลังทำอะไรอยู่?", a:[
+    ["นอนหลับสนิท คนละโลกกับตีสอง","cat"],
+    ["เล่นมือถือ ทั้งที่พรุ่งนี้มีงาน","gecko"],
+    ["คิดถึงเรื่องที่เคยพูดผิดเมื่อ 5 ปีที่แล้ว","duck"],
+    ["เดินหาของกินในครัว","dog"],
+    ["ตื่นมาเฉย ๆ แล้วงงว่าตื่นทำไม","rooster"]
+  ]},
+  { q:"ข้อความไลน์ค้างอ่านเยอะมาก คุณจะ...", a:[
+    ["ปล่อยไว้ เดี๋ยวมันก็หายไปเอง","cat"],
+    ["อ่านแล้วแต่ยังไม่ตอบ... 3 วัน","gecko"],
+    ["ตอบทุกอันทันทีภายใน 1 นาที","rooster"],
+    ["ตอบเฉพาะคนที่ชวนไปกินข้าว","dog"],
+    ["อ่านจากหน้าแจ้งเตือน จะได้ไม่ขึ้นว่าอ่านแล้ว","duck"]
+  ]},
+  { q:"ของหายและต้องรีบใช้ คุณทำยังไง?", a:[
+    ["ค่อย ๆ หา เดี๋ยวก็เจอเอง","cat"],
+    ["ร้องเสียงดัง ให้ทุกคนมาช่วยหา","rooster"],
+    ["หน้านิ่งมาก แต่ในใจวุ่นวายสุด ๆ","duck"],
+    ["วิ่งวนรอบบ้านโดยไม่รู้จะหาตรงไหน","dog"],
+    ["เงียบ ๆ แล้วค่อยโผล่มาตอนเจอ เหมือนไม่เคยหาย","gecko"]
+  ]},
+  { q:"มื้อเที่ยงที่สมบูรณ์แบบคือแบบไหน?", a:[
+    ["กินเสร็จแล้วได้นอนต่อ","cat"],
+    ["กินเยอะ ๆ และมีคนแบ่งให้ด้วย","dog"],
+    ["สั่งเดลิเวอรี่ ไม่ต้องออกจากห้อง","gecko"],
+    ["กินตรงเวลาเป๊ะ 12:00 น.","rooster"],
+    ["ข้าวอะไรก็ได้ แต่ห้ามถามว่ากินอะไรดี","duck"]
+  ]}
+];
+
+let idx = 0;
+let score = {};
+let lastType = "";
+let locked = false;
+let resultName = "";
+
+function show(id){
+  document.querySelectorAll(".screen").forEach((s) => {
+    s.classList.toggle("active", s.id === id);
+  });
+}
+
+function startQuiz(){
+  idx = 0;
+  locked = false;
+  lastType = "";
+  score = {};
+  Object.keys(TYPES).forEach((k) => { score[k] = 0; });
+  renderQuestion();
+  show("quiz");
+}
+
+function renderQuestion(){
+  const item = QUESTIONS[idx];
+  $("qNum").textContent = "ข้อ " + (idx + 1) + " / " + QUESTIONS.length;
+  $("qText").textContent = item.q;
+  $("barFill").style.width = (idx / QUESTIONS.length * 100) + "%";
+
+  const box = $("options");
+  box.textContent = "";
+  item.a.forEach((opt) => {
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.textContent = opt[0];
+    b.onclick = () => pick(b, opt[1]);
+    box.appendChild(b);
+  });
+}
+
+function pick(btn, type){
+  if (locked) return;
+  locked = true;
+  btn.classList.add("picked");
+  score[type] += 1;
+  lastType = type;
+
+  setTimeout(() => {
+    idx += 1;
+    locked = false;
+    if (idx >= QUESTIONS.length) finish();
+    else renderQuestion();
+  }, 280);
+}
+
+function computeResult(scores, last){
+  const max = Math.max(...Object.values(scores));
+  const tops = Object.keys(scores).filter((k) => scores[k] === max);
+  return tops.includes(last) ? last : tops[0];
+}
+
+function finish(){
+  $("barFill").style.width = "100%";
+  const key = computeResult(score, lastType);
+  const t = TYPES[key];
+  resultName = t.name;
+
+  $("resEmoji").textContent = t.emoji;
+  $("resName").textContent = t.name;
+  $("resDesc").textContent = t.desc;
+  $("resQuote").textContent = t.quote;
+
+  const bars = $("bars");
+  bars.textContent = "";
+  Object.keys(TYPES).forEach((k) => {
+    const pct = Math.round(score[k] / QUESTIONS.length * 100);
+    const row = document.createElement("div");
+    row.className = "row";
+
+    const lbl = document.createElement("span");
+    lbl.className = "lbl";
+    lbl.textContent = TYPES[k].emoji + " " + TYPES[k].name;
+
+    const track = document.createElement("div");
+    track.className = "track";
+    const fill = document.createElement("div");
+    fill.className = "fill";
+    fill.style.width = pct + "%";
+    track.appendChild(fill);
+
+    const num = document.createElement("span");
+    num.className = "pct";
+    num.textContent = pct + "%";
+
+    row.appendChild(lbl);
+    row.appendChild(track);
+    row.appendChild(num);
+    bars.appendChild(row);
+  });
+
+  $("shareBtn").textContent = "📤 ส่งให้เพื่อนลองบ้าง";
+  show("result");
+}
+
+function shareResult(){
+  const btn = $("shareBtn");
+  const data = {
+    title: document.title,
+    text: "ฉันได้ \"" + resultName + "\" มาลองทำดูสิ แล้วมาดูว่าเธอเป็นตัวอะไร 😂",
+    url: location.href
+  };
+
+  if (navigator.share) {
+    navigator.share(data).catch((err) => {
+      if (err && err.name !== "AbortError") {
+        copyOrShowLink(btn);
+      }
+    });
+  } else {
+    copyOrShowLink(btn);
+  }
+}
+
+function copyOrShowLink(btn) {
+  const url = location.href;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      btn.textContent = "✅ คัดลอกลิงก์แล้ว";
+    }).catch(() => showLinkPrompt(btn, url));
+  } else {
+    showLinkPrompt(btn, url);
+  }
+}
+
+function showLinkPrompt(btn, url) {
+  const copied = window.prompt("คัดลอกลิงก์นี้เพื่อส่งให้เพื่อน:", url);
+  if (copied !== null) {
+    btn.textContent = "📋 ลิงก์พร้อมส่งให้เพื่อน";
+  }
+}
+</script>
+
+</body>
+</html>
